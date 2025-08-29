@@ -3,37 +3,75 @@ import { getReceiverSocketId, io } from "../lib/socket.js";
 import Message from "../models/message.model.js";
 import User from "../models/user.model.js";
 import Conversation from "../models/conversation.model.js";
+import mongoose from "mongoose";
 
 
 export const getConversations = async (req, res) => {
-    try {
-        const loggedInUserId = req.user._id;
+	try {
+		const loggedInUserId = new mongoose.Types.ObjectId(req.user._id);
 
-        const conversations = await Conversation.find({ participants: loggedInUserId })
-            .populate({
-                path: "participants",
-                select: "fullName profilePic", 
-            })
-            .populate({
-                path: "messages",
-                options: { sort: { createdAt: -1 }, limit: 1 } 
-            });
+		const conversations = await Conversation.aggregate([
+			{ $match: { participants: loggedInUserId } },
+			{
+				$lookup: {
+					from: "users",
+					localField: "participants",
+					foreignField: "_id",
+					as: "participants",
+					pipeline: [
+						{ $match: { _id: { $ne: loggedInUserId } } }, // Exclude the current user
+						{ $project: { password: 0 } }, // Exclude passwords
+					],
+				},
+			},
 
-        // Remove the current user from the participants list in each conversation
-        conversations.forEach(conversation => {
-            conversation.participants = conversation.participants.filter(
-                participant => participant._id.toString() !== loggedInUserId.toString()
-            );
-        });
+			// Stage 3: Get all messages for each conversation
+			{
+				$lookup: {
+					from: "messages",
+					localField: "messages",
+					foreignField: "_id",
+					as: "messages",
+				},
+			},
+			
+			// Stage 4: Add the last message to the top level
+			{
+				$addFields: {
+					lastMessage: { $last: "$messages" },
+				},
+			},
+			
+			// Stage 5: Shape the final output
+			{
+				$project: {
+					_id: 1,
+					participants: 1,
+					isGroupChat: 1,
+					groupName: 1,
+					groupAdmin: 1,
+					createdAt: 1,
+					updatedAt: 1,
+					// Only include the last message object in the messages array
+					messages: {
+						$cond: {
+							if: { $isArray: ["$lastMessage"] },
+							then: [],
+							else: ["$lastMessage"],
+						},
+					},
+				},
+			},
+			// Stage 6: Sort conversations by the date of the last message
+			{ $sort: { "messages.createdAt": -1 } },
+		]);
 
-        res.status(200).json(conversations);
-    } catch (error) {
-        console.log("Error in getConversations", error.message);
-        res.status(500).json({ message: "Internal Server Error" });
-    }
-}
-
-
+		res.status(200).json(conversations);
+	} catch (error) {
+		console.log("Error in getConversations", error.message);
+		res.status(500).json({ message: "Internal Server Error" });
+	}
+};
 
 export const getMessages = async (req, res) => {
     try {

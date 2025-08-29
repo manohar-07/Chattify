@@ -5,7 +5,7 @@ const Conversation = ({ conversation }) => {
 	const { authUser } = useAuthStore();
 	const { selectedConversation, setSelectedConversation } = useChatStore();
 
-	const otherParticipant = conversation.participants[0];
+	const otherParticipant = conversation.participants.find(p => p._id !== authUser._id);
 	const isSelected = selectedConversation?._id === conversation._id;
 
 	return (

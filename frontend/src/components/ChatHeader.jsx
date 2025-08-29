@@ -16,7 +16,7 @@ const ChatHeader = () => {
 		chatDisplayImage = "/group_avatar.png";
 	} else {
 		// It's a 1-on-1 chat, find the other participant
-		const otherParticipant = selectedConversation.participants[0];
+		const otherParticipant = selectedConversation.participants.find(p => p._id !== authUser._id);
 		chatDisplayName = otherParticipant.fullName;
 		chatDisplayImage = otherParticipant.profilePic || "/avatar.png";
 	}
