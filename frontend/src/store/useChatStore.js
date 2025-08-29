@@ -4,66 +4,70 @@ import { axiosInstance } from "../lib/axios";
 import { useAuthStore } from "./useAuthStore";
 
 export const useChatStore = create((set, get) => ({
+  conversations: [],
+  selectedConversation: null,
   messages: [],
-  users: [],
-  selectedUser: null,
-  isUsersLoading: false,
+  isConversationsLoading: false,
   isMessagesLoading: false,
 
-  getUsers: async () => {
-    set({ isUsersLoading: true });
+  fetchConversations: async () => {
+    set({ isConversationsLoading: true });
     try {
-      const res = await axiosInstance.get("/messages/users");
-      set({ users: res.data });
+      const res = await axiosInstance.get("/messages/conversations");
+      set({ conversations: res.data });
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "An error occurred");
     } finally {
-      set({ isUsersLoading: false });
+      set({ isConversationsLoading: false });
     }
   },
 
-  getMessages: async (userId) => {
+  //Fetches messages for a selected conversation ---
+  fetchMessages: async (conversationId) => {
     set({ isMessagesLoading: true });
     try {
-      const res = await axiosInstance.get(`/messages/${userId}`);
+      const res = await axiosInstance.get(`/messages/${conversationId}`);
       set({ messages: res.data });
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "An error occurred");
     } finally {
       set({ isMessagesLoading: false });
     }
   },
-  
+
+  //Sends a message using a conversationId ---
   sendMessage: async (messageData) => {
-    const { selectedUser, messages } = get();
+    const { selectedConversation } = get();
     try {
-      const res = await axiosInstance.post(`/messages/send/${selectedUser._id}`, messageData);
-      set({ messages: [...messages, res.data] });
+      await axiosInstance.post(`/messages/send/${selectedConversation._id}`, messageData);
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "An error occurred");
     }
   },
-
+  
+  // Listens for messages in the current conversation ---
   subscribeToMessages: () => {
-    const { selectedUser } = get();
-    if (!selectedUser) return;
+    const { selectedConversation } = get();
+    if (!selectedConversation) return;
 
     const socket = useAuthStore.getState().socket;
 
     socket.on("newMessage", (newMessage) => {
-      const isMessageSentFromSelectedUser = newMessage.senderId === selectedUser._id;
-      if (!isMessageSentFromSelectedUser) return;
-
-      set({
-        messages: [...get().messages, newMessage],
-      });
+      // Only add the message if it belongs to the currently selected conversation
+      if (newMessage.conversationId === selectedConversation._id) {
+        set((state) => ({
+          messages: [...state.messages, newMessage],
+        }));
+      }
     });
   },
 
   unsubscribeFromMessages: () => {
     const socket = useAuthStore.getState().socket;
-    socket.off("newMessage");
+    if (socket) {
+      socket.off("newMessage");
+    }
   },
-
-  setSelectedUser: (selectedUser) => set({ selectedUser }),
+  
+  setSelectedConversation: (selectedConversation) => set({ selectedConversation }),
 }));

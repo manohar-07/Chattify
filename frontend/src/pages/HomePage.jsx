@@ -5,7 +5,8 @@ import NoChatSelected from "../components/NoChatSelected";
 import ChatContainer from "../components/ChatContainer";
 
 const HomePage = () => {
-  const { selectedUser } = useChatStore();
+  // 1. Change this from selectedUser to selectedConversation
+  const { selectedConversation } = useChatStore();
 
   return (
     <div className="h-screen bg-base-200">
@@ -14,7 +15,8 @@ const HomePage = () => {
           <div className="flex h-full rounded-lg overflow-hidden">
             <Sidebar />
 
-            {!selectedUser ? <NoChatSelected /> : <ChatContainer />}
+            {/* 2. And change the condition here as well */}
+            {!selectedConversation ? <NoChatSelected /> : <ChatContainer />}
           </div>
         </div>
       </div>
