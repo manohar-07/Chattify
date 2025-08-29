@@ -3,6 +3,9 @@ import dotenv from "dotenv"
 import cookieParser from "cookie-parser"
 import authRoute from "./routes/auth.route.js"
 import messageRoute from "./routes/message.route.js"
+import groupRoute from "./routes/group.route.js"
+import userRoute from "./routes/user.route.js";
+import conversationRoute from "./routes/conversation.route.js"
 import cors from "cors"
 import path from "path";
 import {connectDB} from "./lib/db.js";
@@ -23,6 +26,9 @@ app.use(cors({
 }))
 app.use("/api/auth", authRoute);
 app.use("/api/messages", messageRoute);
+app.use("/api/groups", groupRoute); 
+app.use("/api/users", userRoute);
+app.use("/api/conversations", conversationRoute)
 
 if(process.env.NODE_ENV==="production"){
     app.use(express.static(path.join(__dirname,"../frontend/dist")));
