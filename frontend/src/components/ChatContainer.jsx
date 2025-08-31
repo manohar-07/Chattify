@@ -63,7 +63,15 @@ const ChatContainer = () => {
 			<ChatHeader onHeaderClick={() => setIsGroupInfoOpen(true)} />
 
 			<div className='flex-1 overflow-y-auto p-4 space-y-4'>
-				{messages.map((message) => (
+				{messages.map((message) => {
+					if (message.messageType === 'system') {
+						return (
+							<div key={message._id} className="text-center text-sm text-base-content/60 my-2 italic">
+								{message.text}
+							</div>
+						);
+					}
+					return (
 					<div
 						key={message._id}
 						className={`chat ${message.senderId === authUser._id ? "chat-end" : "chat-start"}`}
@@ -94,7 +102,9 @@ const ChatContainer = () => {
 							{message.text && <p>{message.text}</p>}
 						</div>
 					</div>
-				))}
+					);
+			})}
+			
 			</div>
 
 			<MessageInput />

@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { axiosInstance } from "../lib/axios";
 import toast from "react-hot-toast";
 
-const UserList = ({ selectedUsers, onUserSelect }) => {
+// 1. Accept a new 'exclude' prop, with a default empty array
+const UserList = ({ selectedUsers, onUserSelect, exclude = [] }) => {
 	const [users, setUsers] = useState([]);
 	const [loading, setLoading] = useState(true);
 	const [searchTerm, setSearchTerm] = useState("");
@@ -21,9 +22,10 @@ const UserList = ({ selectedUsers, onUserSelect }) => {
 		getUsers();
 	}, []);
 
-	const filteredUsers = users.filter((user) =>
-		user.fullName.toLowerCase().includes(searchTerm.toLowerCase())
-	);
+	// 2. Add a second filter to exclude users who are already in the group
+	const filteredUsers = users
+		.filter((user) => user.fullName.toLowerCase().includes(searchTerm.toLowerCase()))
+		.filter((user) => !exclude.includes(user._id));
 
 	return (
 		<div className='flex flex-col gap-4'>

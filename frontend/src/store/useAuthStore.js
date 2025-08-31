@@ -4,6 +4,7 @@ import { create } from "zustand";
 import {axiosInstance} from "../lib/axios.js";
 import toast from "react-hot-toast";
 import {io} from "socket.io-client";
+import { useChatStore } from "./useChatStore.js";
 
 const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:5001": "/";
 
@@ -96,6 +97,18 @@ export const useAuthStore = create((set, get)=>({
       socket.on("getOnlineUsers",(userIds) =>{
         set({onlineUsers:userIds});
       })
+
+      socket.on("conversationUpdated", (updatedConversation) => {
+          useChatStore.getState().handleConversationUpdate(updatedConversation);
+      });
+
+      socket.on("addedToGroup", (newConversation) => {
+          useChatStore.getState().handleAddedToGroup(newConversation);
+      });
+
+      socket.on("removedFromGroup", ({ conversationId }) => {
+          useChatStore.getState().handleRemovedFromGroup(conversationId);
+      });
 
     },
     disconnectSocket: () =>{

@@ -12,8 +12,12 @@ export const getConversations = async (req, res) => {
 
 		const conversations = await Conversation.aggregate([
 			// Stage 1: Find all conversations the user is a part of
-			{ $match: { participants: loggedInUserId } },
-
+			{
+				$match: {
+					participants: loggedInUserId,
+					hiddenFor: { $ne: loggedInUserId } 
+				},
+			},
 			// Stage 2: Get details of other participants
 			{
 				$lookup: {

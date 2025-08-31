@@ -2,15 +2,17 @@ import { useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
 import { Camera, Check, Edit, X } from "lucide-react";
+import AddMemberModal from "./AddMemberModal";
 
 const GroupInfoModal = ({ conversation, onClose }) => {
   const { authUser } = useAuthStore();
-  const { updateGroup } = useChatStore();
+  const { updateGroup, leaveOrDeleteConversation, removeMemberFromGroup } = useChatStore();
 
   // State for managing UI
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(conversation.groupName);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
 
   const allParticipants = conversation.participants;
   const isAdmin = authUser._id === conversation.groupAdmin;
@@ -137,34 +139,76 @@ const GroupInfoModal = ({ conversation, onClose }) => {
         <div className="divider">Members</div>
 
         <ul className="space-y-3 max-h-60 overflow-y-auto">
-          {sortedParticipants.map((member) => (
-            <li
-              key={member._id}
-              className="flex items-center justify-between p-1 rounded-md"
-            >
-              <div className="flex items-center gap-3">
-                <div className="avatar">
-                  <div className="w-10 rounded-full">
-                    <img
-                      src={member.profilePic || "/avatar.png"}
-                      alt="Member Avatar"
-                    />
-                  </div>
-                </div>
-                <span>
-                  {member._id === authUser._id ? "You" : member.fullName}
-                </span>
-              </div>
+			{sortedParticipants.map((member) => (
+				<li
+				key={member._id}
+				className="flex items-center justify-between p-1 rounded-md hover:bg-base-200"
+				>
+				<div className="flex items-center gap-3">
+					<div className="avatar">
+					<div className="w-10 rounded-full">
+						<img
+						src={member.profilePic || "/avatar.png"}
+						alt="Member Avatar"
+						/>
+					</div>
+					</div>
+					<span>
+					{member._id === authUser._id ? "You" : member.fullName}
+					</span>
+				</div>
 
-              {member._id === conversation.groupAdmin && (
-                <span className="text-primary text-xs font-semibold">
-                  Admin
-                </span>
-              )}
-            </li>
-          ))}
-        </ul>
+				<div className="flex items-center gap-2">
+					{/* Remove button (admin only, cannot remove self) */}
+					{isAdmin && member._id !== authUser._id && (
+					<button
+						className="btn btn-xs btn-circle btn-ghost"
+						onClick={() => {
+						if (
+							window.confirm(
+							`Are you sure you want to remove ${member.fullName}?`
+							)
+						) {
+							removeMemberFromGroup(conversation._id, member._id);
+						}
+						}}
+					>
+						<X size={16} />
+					</button>
+					)}
+
+					{/* Admin tag */}
+					{member._id === conversation.groupAdmin && (
+					<span className="text-primary text-xs font-semibold">Admin</span>
+					)}
+				</div>
+				</li>
+			))}
+			</ul>
+
+		<div className="modal-action">
+			{isAdmin && (
+				<button 
+					className="btn btn-primary"
+					onClick={() => setIsAddMemberModalOpen(true)}
+				>
+					Add Members
+				</button>
+			)}
+			<button 
+				className="btn btn-error btn-outline"
+				onClick={() => leaveOrDeleteConversation(conversation)}
+			>
+				{conversation.isGroupChat ? "Leave Group" : "Delete Chat"}
+			</button>
+		</div>
       </div>
+	  {isAddMemberModalOpen && (
+        <AddMemberModal 
+            conversation={conversation} 
+            onClose={() => setIsAddMemberModalOpen(false)} 
+        />
+    )}
     </div>
   );
 };

@@ -67,6 +67,72 @@ export const useChatStore = create((set, get) => ({
         toast.error(error.response?.data?.message || "Failed to update group");
     }
 },
+
+// Add this new function to useChatStore.js
+leaveOrDeleteConversation: async (conversation) => {
+    const isGroup = conversation.isGroupChat;
+    const conversationId = conversation._id;
+
+    // Show a confirmation dialog
+    const confirmed = window.confirm(
+        `Are you sure you want to ${isGroup ? "leave this group" : "delete this chat"}?`
+    );
+    if (!confirmed) return;
+
+    try {
+        await axiosInstance.delete(`/conversations/${conversationId}`);
+        toast.success(isGroup ? "You have left the group" : "Chat deleted");
+
+        // Refresh the sidebar and close the chat window
+        set({ selectedConversation: null });
+        get().fetchConversations();
+    } catch (error) {
+        toast.error(error.response?.data?.message || "An error occurred");
+    }
+},
+
+
+removeMemberFromGroup: async (conversationId, memberId) => {
+    try {
+        const res = await axiosInstance.post(`/groups/${conversationId}/remove-member`, { memberId });
+        const updatedConversation = res.data; // The fresh conversation object from the backend
+        toast.success("Member removed");
+
+        // Update both the main list and the selected conversation
+        set(state => ({
+            conversations: state.conversations.map(c => 
+                c._id === conversationId ? updatedConversation : c
+            ),
+            selectedConversation: 
+                state.selectedConversation?._id === conversationId 
+                ? updatedConversation 
+                : state.selectedConversation
+        }));
+    } catch (error) {
+        toast.error(error.response?.data?.message || "Failed to remove member");
+    }
+},
+
+addMembersToGroup: async (conversationId, memberIds) => {
+    try {
+        const res = await axiosInstance.post(`/groups/${conversationId}/add-members`, { memberIds });
+        const updatedConversation = res.data;
+
+        toast.success("Members added");
+
+        set(state => ({
+            conversations: state.conversations.map(c => 
+                c._id === conversationId ? updatedConversation : c
+            ),
+            selectedConversation: 
+                state.selectedConversation?._id === conversationId 
+                ? updatedConversation 
+                : state.selectedConversation
+        }));
+    } catch (error) {
+        toast.error(error.response?.data?.message || "Failed to add members");
+    }
+},
   
   // Listens for messages in the current conversation ---
   subscribeToMessages: () => {
@@ -91,6 +157,41 @@ export const useChatStore = create((set, get) => ({
       socket.off("newMessage");
     }
   },
+
+handleConversationUpdate: (updatedConversation) => {
+    set(state => ({
+        // Update the conversation in the main list
+        conversations: state.conversations.map(c => 
+            c._id === updatedConversation._id ? updatedConversation : c
+        ),
+        // If the updated conversation is the one currently selected, update it too
+        selectedConversation: 
+            state.selectedConversation?._id === updatedConversation._id 
+            ? updatedConversation 
+            : state.selectedConversation
+    }));
+},
+
+handleAddedToGroup: (newConversation) => {
+    set((state) => ({
+        conversations: [newConversation, ...state.conversations],
+    }));
+    toast.success(`You have been added to the group: ${newConversation.groupName}`);
+},
+
+handleRemovedFromGroup: (conversationId) => {
+    set((state) => ({
+        // Remove the conversation from the main list
+        conversations: state.conversations.filter(c => c._id !== conversationId),
+
+        // If the removed conversation was the one currently selected, close it
+        selectedConversation: 
+            state.selectedConversation?._id === conversationId 
+            ? null 
+            : state.selectedConversation
+    }));
+    toast.error(`You have been removed from ${conversationId.groupName} group.`);
+},
   
   setSelectedConversation: (selectedConversation) => set({ selectedConversation }),
 }));
