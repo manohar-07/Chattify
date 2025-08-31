@@ -2,21 +2,18 @@ import { X } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
 
-const ChatHeader = () => {
-	// 1. Get the new state from the store
+const ChatHeader = ({ onHeaderClick }) => {
 	const { selectedConversation, setSelectedConversation } = useChatStore();
 	const { authUser } = useAuthStore();
 
-	// 2. Add logic to determine the correct display name and image
 	let chatDisplayName;
 	let chatDisplayImage;
 
 	if (selectedConversation.isGroupChat) {
 		chatDisplayName = selectedConversation.groupName;
-		chatDisplayImage = "/group_avatar.png";
+		chatDisplayImage = selectedConversation.groupPic || "/group_avatar.png";
 	} else {
-		// It's a 1-on-1 chat, find the other participant
-		const otherParticipant = selectedConversation.participants.find(p => p._id !== authUser._id);
+		const otherParticipant = selectedConversation.participants.find((p) => p._id !== authUser._id);
 		chatDisplayName = otherParticipant.fullName;
 		chatDisplayImage = otherParticipant.profilePic || "/avatar.png";
 	}
@@ -24,22 +21,25 @@ const ChatHeader = () => {
 	return (
 		<div className='p-2.5 border-b border-base-300'>
 			<div className='flex items-center justify-between'>
-				<div className='flex items-center gap-3'>
-					{/* Avatar */}
+				<button
+					className={`flex items-center gap-3 w-full ${
+						selectedConversation.isGroupChat ? "cursor-pointer hover:bg-base-200 rounded-md p-1" : "cursor-default p-1"
+					}`}
+					onClick={selectedConversation.isGroupChat ? onHeaderClick : undefined}
+				>
+					
 					<div className='avatar'>
 						<div className='size-10 rounded-full relative'>
 							<img src={chatDisplayImage} alt={chatDisplayName} />
 						</div>
 					</div>
 
-					{/* User info */}
 					<div>
 						<h3 className='font-medium'>{chatDisplayName}</h3>
-						{/* Online status can be improved later for groups */}
 					</div>
-				</div>
+				</button>
 
-				{/* Close button */}
+				{/* Close button remains separate */}
 				<button onClick={() => setSelectedConversation(null)}>
 					<X />
 				</button>

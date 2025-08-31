@@ -11,7 +11,10 @@ export const getConversations = async (req, res) => {
 		const loggedInUserId = new mongoose.Types.ObjectId(req.user._id);
 
 		const conversations = await Conversation.aggregate([
+			// Stage 1: Find all conversations the user is a part of
 			{ $match: { participants: loggedInUserId } },
+
+			// Stage 2: Get details of other participants
 			{
 				$lookup: {
 					from: "users",
@@ -19,8 +22,7 @@ export const getConversations = async (req, res) => {
 					foreignField: "_id",
 					as: "participants",
 					pipeline: [
-						{ $match: { _id: { $ne: loggedInUserId } } }, // Exclude the current user
-						{ $project: { password: 0 } }, // Exclude passwords
+						{ $project: { password: 0 } },
 					],
 				},
 			},
@@ -32,16 +34,17 @@ export const getConversations = async (req, res) => {
 					localField: "messages",
 					foreignField: "_id",
 					as: "messages",
+					pipeline: [{ $sort: { createdAt: -1 } }],
 				},
 			},
-			
+
 			// Stage 4: Add the last message to the top level
 			{
 				$addFields: {
-					lastMessage: { $last: "$messages" },
+					lastMessage: { $first: "$messages" },
 				},
 			},
-			
+
 			// Stage 5: Shape the final output
 			{
 				$project: {
@@ -49,19 +52,14 @@ export const getConversations = async (req, res) => {
 					participants: 1,
 					isGroupChat: 1,
 					groupName: 1,
+					groupPic: 1,
 					groupAdmin: 1,
 					createdAt: 1,
 					updatedAt: 1,
-					// Only include the last message object in the messages array
-					messages: {
-						$cond: {
-							if: { $isArray: ["$lastMessage"] },
-							then: [],
-							else: ["$lastMessage"],
-						},
-					},
+					messages: ["$lastMessage"],
 				},
 			},
+            
 			// Stage 6: Sort conversations by the date of the last message
 			{ $sort: { "messages.createdAt": -1 } },
 		]);

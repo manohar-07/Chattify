@@ -27,6 +27,16 @@ const conversationSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
         },
+
+        groupPic: {
+            type: String,
+            default: "",
+        },
+        hiddenFor: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            default: []
+        }],
     },
     { timestamps: true }
 );

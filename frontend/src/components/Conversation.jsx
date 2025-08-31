@@ -16,7 +16,7 @@ const Conversation = ({ conversation }) => {
 		>
 			<div className='relative mx-auto lg:mx-0'>
 				<img
-					src={conversation.isGroupChat ? "/group_avatar.png" : otherParticipant.profilePic || "/avatar.png"}
+					src={conversation.isGroupChat ? conversation.groupPic || "/group_avatar.png" : otherParticipant.profilePic || "/avatar.png"}
 					alt='chat avatar'
 					className='size-12 object-cover rounded-full'
 				/>

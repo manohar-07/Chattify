@@ -1,5 +1,6 @@
 import { useChatStore } from "../store/useChatStore";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import GroupInfoModal from "./GroupInfoModal";
 
 import ChatHeader from "./ChatHeader";
 import MessageInput from "./MessageInput";
@@ -7,7 +8,11 @@ import MessageSkeleton from "./skeletons/MessageSkeleton";
 import { useAuthStore } from "../store/useAuthStore";
 import { formatMessageTime } from "../lib/utils";
 
+
+
 const ChatContainer = () => {
+	const [isGroupInfoOpen, setIsGroupInfoOpen] = useState(false);
+
 	const {
 		messages,
 		fetchMessages, // Changed from getMessages
@@ -55,7 +60,7 @@ const ChatContainer = () => {
 
 	return (
 		<div className='flex-1 flex flex-col overflow-auto'>
-			<ChatHeader />
+			<ChatHeader onHeaderClick={() => setIsGroupInfoOpen(true)} />
 
 			<div className='flex-1 overflow-y-auto p-4 space-y-4'>
 				{messages.map((message) => (
@@ -93,6 +98,7 @@ const ChatContainer = () => {
 			</div>
 
 			<MessageInput />
+			{isGroupInfoOpen && <GroupInfoModal conversation={selectedConversation} onClose={() => setIsGroupInfoOpen(false)} />}
 		</div>
 	);
 };
